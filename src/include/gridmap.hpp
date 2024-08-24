@@ -29,10 +29,10 @@ public:
 
   // set the label associated with the coordinate (x, y)
   inline void set_label(State c, bool label) {
-    db[c.y * height_ + c.x] = label;
+    db[c.y * width_ + c.x] = label;
   }
 
-  inline bool get_label(State c) { return db[c.y * height_ + c.x]; }
+  inline bool get_label(State c) { return db[c.y * width_ + c.x]; }
 
   vid height_, width_;
   string filename;

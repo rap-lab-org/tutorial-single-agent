@@ -9,12 +9,12 @@ gridmap::gridmap(vid h, vid w) {
 };
 
 gridmap::gridmap(const string &filename) {
-  gm_parser parer(filename);
-  this->height_ = parer.get_header().height_;
-  this->width_ = parer.get_header().width_;
+  gm_parser parser(filename);
+  this->height_ = parser.get_header().height_;
+  this->width_ = parser.get_header().width_;
   this->db.resize(this->height_ * this->width_);
   for (vid i = 0; i < this->db.size(); i++) {
-    auto c = parer.get_tile_at(i);
+    auto c = parser.get_tile_at(i);
     this->db[i] = traversable(c) ? 0 : 1;
   }
 }
