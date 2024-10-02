@@ -16,3 +16,7 @@
 # Step 4: using space-time `A*` to solve multi-agent pathfinding problem by `Prioritized Planning`
 
   - [Benchmark](https://movingai.com/benchmarks/mapf/index.html)
+
+# Resources
+
+- [Visualizer](https://github.com/MAPF-Competition/PlanViz)
