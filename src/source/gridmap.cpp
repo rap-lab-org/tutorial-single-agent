@@ -18,9 +18,3 @@ gridmap::gridmap(const string &filename) {
     this->db[i] = traversable(c) ? 0 : 1;
   }
 }
-
-vector<State> get_neighbours(State c) {
-  // TODO: get neighbours of an 8-connected grid;
-  auto res = vector<State>{};
-  return res;
-}
