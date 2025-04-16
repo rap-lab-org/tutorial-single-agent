@@ -1,5 +1,7 @@
 #pragma once
+#include <algorithm>
 #include <cassert>
+#include <limits>
 #include <math.h>
 #include <queue>
 #include <vector>
@@ -74,11 +76,15 @@ public:
     start.h = hVal(start.loc, start.loc);
 
     assert(gtable.size() >= width * height);
+		// std::fill(gtable.begin(), gtable.end(), numeric_limits<double>::max());
     gtable[id(start.loc)] = 0;
 
 		// parent.resize(width * height);
     assert(parent.size() >= width * height);
+		// std::fill(parent.begin(), parent.end(), -1);
     parent[id(start.loc)] = -1;
+
+		// before move on, any other preconditions are not satisfied?
 
     q.push(start);
 
