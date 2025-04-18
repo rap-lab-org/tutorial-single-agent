@@ -73,7 +73,7 @@ public:
     priority_queue<Node, vector<Node>, less<Node>> q;
     Node goal(gx, gy);
     Node start(sx, sy);
-    start.h = hVal(start.loc, start.loc);
+    start.h = hVal(start.loc, goal.loc);
 
     assert(gtable.size() >= width * height);
 		// std::fill(gtable.begin(), gtable.end(), numeric_limits<double>::max());
