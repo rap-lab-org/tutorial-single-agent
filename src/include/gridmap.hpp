@@ -19,14 +19,14 @@ public:
   // init map based on an input file
   gridmap(const string &filename);
 
-  inline vector<State> get_neighbours(State c) {
+  inline vector<State> get_neighbours(State c) const {
     // TODO: get neighbours of an 8-connected grid;
     auto res = vector<State>{};
     return res;
   };
 
   // get the label associated with the coordinate (x, y)
-  inline bool is_obstacle(State c) {
+  inline bool is_obstacle(State c) const {
     auto label = this->get_label(c);
     return label == 1;
   }
@@ -34,7 +34,7 @@ public:
   // set the label associated with the coordinate (x, y)
   inline void set_label(State c, bool label) { db[c.y * width_ + c.x] = label; }
 
-  inline bool get_label(State c) { return db[c.y * width_ + c.x]; }
+  inline bool get_label(State c) const { return db[c.y * width_ + c.x]; }
 
   vid height_, width_;
   string filename;
