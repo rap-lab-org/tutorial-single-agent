@@ -299,11 +299,10 @@ if __name__ == "__main__":
     mapfile = argv[1]  # static obstacles
     jsonfile = argv[2] # start, tasks, dynamic obstacles
     planfile = argv[3] # tour
-    dynobstfile = argv[4] # trajectory of dynamic obstacles
     save = 1
-    if len(argv) > 5:
-        save = int(argv[5])
-    ani = draw_animation(mapfile, jsonfile, planfile, dynobstfile, framePerT=5, draw_trans=False)
+    if len(argv) > 4:
+        save = int(argv[4])
+    ani = draw_animation(mapfile, jsonfile, planfile, "", framePerT=5, draw_trans=False)
     if save:
         ani.save("sipp-tsp.mp4")
     else:
