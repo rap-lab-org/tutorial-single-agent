@@ -4,6 +4,7 @@
 #include <vector>
 #include <format>
 #include "STAstar.hpp"
+#include "STAstarRC.hpp"
 #include "dynscens.hpp"
 #include "gridmap.hpp"
 using namespace std;
@@ -18,6 +19,7 @@ void save_path(const vector<STAstar::STState>& path, string fn) {
 void run(movingai::gridmap& g, dynenv::DynScen& scen) {
 
 	STAstar solver(g, scen.node_constraints, g.width_, g.height_);
+	STAstarRC solverRC(g, scen.node_constraints, g.width_, g.height_);
 	auto sy = scen.source / g.width_;
 	auto sx = scen.source % g.width_;
 	for (auto t: scen.targetSet) {
@@ -29,6 +31,14 @@ void run(movingai::gridmap& g, dynenv::DynScen& scen) {
 		auto path = solver.get_path();
 		assert (solver.validate(path));
 		save_path(path, to_string(scen.source) + "-" + to_string(t) + "-plan.txt");
+
+
+		auto costRC = solverRC.run(sx, sy, tx, ty);
+		// auto pathRC = solverRC.get_path_fromID();
+		// assert (solverRC.validate(pathRC));
+		// pathRC = solverRC.get_path_fromPtr();
+		// assert (solverRC.validate(pathRC));
+		assert (costRC == cost);
 	}
 }
 
