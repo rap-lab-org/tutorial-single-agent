@@ -27,6 +27,9 @@ public:
 
   // get the label associated with the coordinate (x, y)
   inline bool is_obstacle(State c) const {
+    // hit the boundary
+    if (c.x < 0 || c.x >= width_ || c.y < 0 || c.y >= height_)
+      return true;
     auto label = this->get_label(c);
     return label == 1;
   }
