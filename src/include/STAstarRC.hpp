@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cassert>
 #include <format>
-#include <istream>
 #include <math.h>
 #include <memory>
 #include <ostream>
@@ -21,6 +20,7 @@ public:
   using vid = movingai::vid;
   using Cost = int;
   using ID = int;
+	using NodeCSTRs = std::unordered_map<long, std::vector<dynenv::Interval>>;
 
   struct STState {
     vid x, y;
@@ -88,9 +88,9 @@ public:
 
   int width, height;
   const gridmap &grid;
-  const dynenv::NodeCSTRs &cstrs;
+  const NodeCSTRs &cstrs;
 
-  STAstarRC(const gridmap &g, const dynenv::NodeCSTRs &cs, int w, int h)
+  STAstarRC(const gridmap &g, const NodeCSTRs &cs, int w, int h)
       : grid(g), cstrs(cs), width(w), height(h){};
 
   inline vid id(const vid &x, const vid &y) const { return y * width + x; }

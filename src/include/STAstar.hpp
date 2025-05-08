@@ -3,7 +3,6 @@
 #include "gridmap.hpp"
 #include <algorithm>
 #include <cassert>
-#include <format>
 #include <math.h>
 #include <queue>
 #include <set>
@@ -18,6 +17,7 @@ public:
   using vid = movingai::vid;
   using Cost = int;
   using ID = int;
+	using NodeCSTRs = std::unordered_map<long, std::vector<dynenv::Interval>>;
 
   struct STState {
     vid x, y;
@@ -65,9 +65,9 @@ public:
 
   int width, height;
   const gridmap &grid;
-  const dynenv::NodeCSTRs &cstrs;
+  const NodeCSTRs &cstrs;
 
-  STAstar(const gridmap &g, const dynenv::NodeCSTRs &cs, int w, int h)
+  STAstar(const gridmap &g, const NodeCSTRs &cs, int w, int h)
       : grid(g), cstrs(cs), width(w), height(h){};
 
   inline vid id(const vid &x, const vid &y) const { return y * width + x; }
@@ -162,7 +162,7 @@ public:
       if (cstrs.find(key) == cstrs.end())
         continue;
       for (const auto &l : cstrs.at(key)) {
-        if (l.tl <= v.t && v.t <= l.tr) {
+        if (l.tl <= v.t && v.t < l.tr) {
           cerr << std::format("Violate constraint at loc ({}, {}), time {}",
                               v.x, v.y, v.t)
                << endl;

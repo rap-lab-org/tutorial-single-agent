@@ -17,16 +17,14 @@ struct Interval {
 	static const long INF = std::numeric_limits<long>::max();
 
 	bool is_in(Time t) const {
-		return tl <= t && t <= tr;
+		return tl <= t && t < tr;
 	}
 };
-
-using NodeCSTRs = std::unordered_map<long, std::vector<Interval>>;
 
 struct DynScen{
     long source;
     std::vector<long> targetSet;
-		NodeCSTRs node_constraints;
+		std::unordered_map<long, std::vector<Interval>> node_constraints;
     // std::vector<std::vector<long>> node_constraints;
 };
 
@@ -46,11 +44,12 @@ inline void load_and_parse_json(const std::string &file_name, std::vector<DynSce
 
         const auto& nodeConstraints = entry["node_constraints"];
         for (auto it = nodeConstraints.begin(); it != nodeConstraints.end(); ++it) {
-            long nodeId = std::stol(it.key()); // 节点ID
+            long nodeId = std::stol(it.key());
             for (auto tupleIt=it->begin(); tupleIt != it->end(); ++tupleIt) {
 								long tl = tupleIt->front();
 								long tr = tupleIt->back();
-								data_entry.node_constraints[nodeId].push_back(Interval{(Time)tl, (Time)tr});
+								// node constraints interval is half-open: [tl, tr+1)
+								data_entry.node_constraints[nodeId].push_back(Interval{(Time)tl, (Time)tr+1});
             }
         }
         data_entries.push_back(data_entry);
