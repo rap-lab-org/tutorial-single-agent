@@ -211,6 +211,15 @@ public:
     return res;
   }
 
+	inline bool is_reached(shared_ptr<Node> cptr, int gx, int gy) {
+		if (!cptr->isAt(gx, gy)) return false;
+		int cstrs_num = 0;
+		vid cid = id(cptr->v.x, cptr->v.y);
+		if (cstrs.find(cid) != cstrs.end())
+			cstrs_num = cstrs.at(cid).size();
+		return cptr->si.key == cstrs_num;
+	}
+
   inline Cost run(int sx, int sy, int gx, int gy) {
     init_search();
     // customize comparator
@@ -234,7 +243,7 @@ public:
       auto cptr = q.top();
       q.pop();
       // cout << "Pop: " << *cptr.get() << endl;
-      if (cptr->isAt(gx, gy)) {
+      if (is_reached(cptr, gx, gy)) {
         best = cptr->g;
         bestID = cptr->id;
         bestPtr = cptr;

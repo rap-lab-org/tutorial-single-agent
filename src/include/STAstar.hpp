@@ -17,7 +17,7 @@ public:
   using vid = movingai::vid;
   using Cost = int;
   using ID = int;
-	using NodeCSTRs = std::unordered_map<long, std::vector<dynenv::Interval>>;
+  using NodeCSTRs = std::unordered_map<long, std::vector<dynenv::Interval>>;
 
   struct STState {
     vid x, y;
@@ -102,6 +102,15 @@ public:
 
   inline const Node &cur() const { return this->nodes.at(curID); }
 
+  inline bool is_reached(int gx, int gy) {
+    auto &n = cur();
+    if (!n.isAt(gx, gy)) return false;
+		vid cid = id(n.v.x, n.v.y); 
+		if (cstrs.find(cid) == cstrs.end() ||
+				cstrs.at(cid).back().tr <= n.g) return true;
+		return false;
+  }
+
   inline Cost run(int sx, int sy, int gx, int gy) {
     init_search();
     auto pcmp = [&](const ID &i, const ID &j) {
@@ -114,7 +123,7 @@ public:
     while (!q.empty()) {
       curID = q.top();
       q.pop();
-      if (cur().isAt(gx, gy)) {
+      if (is_reached(gx, gy)) {
         best = cur().g;
         bestID = curID;
         break;
