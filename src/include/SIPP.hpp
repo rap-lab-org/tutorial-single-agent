@@ -10,19 +10,24 @@
 #include <vector>
 using namespace std;
 
+#define SIPPDBG 0
+
 class SIPP {
 public:
   using gridmap = movingai::gridmap;
   using UnsafeInv = dynenv::Interval;
   using Time = dynenv::Time;
-  using vid = movingai::vid;
   using Cost = int;
-  using ID = int;
-	using NodeCSTRs = unordered_map<long, vector<UnsafeInv>>;
+  using Coord = int; // coordinate
+  using ID = int; // search node id
+  using VID = long;
+  using EID = long long; // edge id
+  using NodeCSTRs = unordered_map<VID, vector<UnsafeInv>>;
+  using EdgeCSTRs = unordered_map<EID, vector<UnsafeInv>>;
   const Time INFT = numeric_limits<Time>::max() / 2;
 
   struct STState {
-    vid x, y;
+    VID x, y;
     Time t;
 
     friend ostream &operator<<(ostream &o, const STState &s) {
@@ -81,7 +86,7 @@ public:
       return o;
     }
 
-    inline bool isAt(vid x, vid y) const { return v.x == x && v.y == y; }
+    inline bool isAt(VID x, VID y) const { return v.x == x && v.y == y; }
 
     inline double f() const { return g + h; }
 
@@ -114,40 +119,42 @@ public:
 
   int width, height;
   const gridmap &graph;
-  const NodeCSTRs &cstrs;
+  const NodeCSTRs &cstrs_n;
+  const EdgeCSTRs &cstrs_e;
 
-  SIPP(const gridmap &g, const NodeCSTRs &cs, int w, int h)
-      : graph(g), cstrs(cs), width(w), height(h) {
+  SIPP(const gridmap &g, const NodeCSTRs &cs, const EdgeCSTRs &ecs, int w,
+       int h)
+      : graph(g), cstrs_n(cs), cstrs_e(ecs), width(w), height(h) {
     gtable.resize(w * h);
     for (int i = 0; i < h * w; i++) {
-      if (cstrs.find(i) == cstrs.end())
+      if (cstrs_n.find(i) == cstrs_n.end())
         gtable[i].resize(1);
       else
-        gtable[i].resize(cstrs.at(i).size() + 1);
+        gtable[i].resize(cstrs_n.at(i).size() + 1);
     }
   };
 
-  inline vid id(const vid &x, const vid &y) const { return y * width + x; }
+  inline VID id(const VID &x, const VID &y) const { return y * width + x; }
 
-  inline Cost gval(vid cid, int key) {
+  inline Cost gval(VID cid, int key) {
     if (gtable[cid][key].__round == __round)
       return gtable[cid][key].g;
     else
       return INFT;
   }
 
-  inline double hVal(const STState &a, const vid &gx, const vid &gy) {
+  inline double hVal(const STState &a, const VID &gx, const VID &gy) {
     return abs(a.x - gx) + abs(a.y - gy);
   }
 
   inline void init_search() {
     this->nodes.clear();
-		// cstrs might be different each round
-		// ensure gtable[i] has enough size
+    // cstrs might be different each round
+    // ensure gtable[i] has enough size
     for (int i = 0; i < height * width; i++) {
-      if (cstrs.find(i) != cstrs.end() &&
-          gtable[i].size() < cstrs.at(i).size() + 1) {
-				gtable[i].resize(cstrs.at(i).size()+1);
+      if (cstrs_n.find(i) != cstrs_n.end() &&
+          gtable[i].size() < cstrs_n.at(i).size() + 1) {
+        gtable[i].resize(cstrs_n.at(i).size() + 1);
       }
     }
     __round++;
@@ -168,20 +175,11 @@ public:
     return res;
   }
 
-  // find all safe intervals that are potentially overlapped
-  // with a time interval [tl, tr)
-  inline vector<SafeInterval> find_safe_intvs(int nx, int ny, Time tl,
-                                              Time tr) {
-    vid nid = id(nx, ny);
-    if (cstrs.find(nid) == cstrs.end()) {
-      // nid is always safe
-      return vector<SafeInterval>{{0, INFT, 0}};
-    }
+  inline vector<SafeInterval>
+  _find_safe_intvs(Time tl, Time tr, const vector<UnsafeInv> &unsafes) {
 
     vector<SafeInterval> res = {};
     res.reserve(1 << 5);
-
-    const auto &unsafes = cstrs.at(nid);
     // the first unsafe interval that unsafes[i].tl <= tl
     int i = last_unsafe_before_tl(0, unsafes.size(), tl, unsafes);
     Time safeL, safeR;
@@ -211,14 +209,41 @@ public:
     return res;
   }
 
-	inline bool is_reached(shared_ptr<Node> cptr, int gx, int gy) {
-		if (!cptr->isAt(gx, gy)) return false;
-		int cstrs_num = 0;
-		vid cid = id(cptr->v.x, cptr->v.y);
-		if (cstrs.find(cid) != cstrs.end())
-			cstrs_num = cstrs.at(cid).size();
-		return cptr->si.key == cstrs_num;
-	}
+  // find all safe intervals that are potentially overlapped
+  // with a time interval [tl, tr)
+  inline vector<SafeInterval> find_safe_intvs(VID cur_id, VID nxt_id, Time tl,
+                                              Time tr, Cost w) {
+    vector<SafeInterval> node_safes;
+    if (cstrs_n.find(nxt_id) == cstrs_n.end()) {
+      // nid is always safe
+      node_safes = vector<SafeInterval>{{0, INFT, 0}};
+    } else {
+      node_safes = _find_safe_intvs(tl + w, tr + w, cstrs_n.at(nxt_id));
+    }
+    return node_safes;
+    // TODO: add edge constraints
+    vector<SafeInterval> edge_safes;
+    auto ekey = cur_id * 1000000 + nxt_id;
+    if (cstrs_e.find(ekey) == cstrs_e.end()) {
+      // edge is always safe
+      edge_safes = vector<SafeInterval>{{0, INFT, 0}};
+    } else {
+      edge_safes = _find_safe_intvs(tl, tr, cstrs_e.at(ekey));
+    }
+    // filter node_safes by edges_safes
+    // auto res = func(node_safes, edges_safes)
+    // return res;
+  }
+
+  inline bool is_reached(shared_ptr<Node> cptr, int gx, int gy) {
+    if (!cptr->isAt(gx, gy))
+      return false;
+    int cstrs_num = 0;
+    VID cid = id(cptr->v.x, cptr->v.y);
+    if (cstrs_n.find(cid) != cstrs_n.end())
+      cstrs_num = cstrs_n.at(cid).size();
+    return cptr->si.key == cstrs_num;
+  }
 
   inline Cost run(int sx, int sy, int gx, int gy) {
     init_search();
@@ -228,8 +253,8 @@ public:
     };
     priority_queue<shared_ptr<Node>, vector<shared_ptr<Node>>, decltype(cmp)> q(
         cmp);
-		// ensure the start location is safe, otherwise no solution
-    auto safe_intvs = find_safe_intvs(sx, sy, 0, 1);
+    // ensure the start location is safe, otherwise no solution
+    auto safe_intvs = find_safe_intvs(-1, id(sx, sy), 0, 1, 0);
     for (auto &safe_intv : safe_intvs) {
       if (safe_intv.tl <= 0 && 0 < safe_intv.tr) {
         gtable[id(sx, sy)][safe_intv.key] = {0, __round};
@@ -242,35 +267,37 @@ public:
     while (!q.empty()) {
       auto cptr = q.top();
       q.pop();
-      // cout << "Pop: " << *cptr.get() << endl;
+			if (SIPPDBG) cout << "Pop: " << *cptr.get() << endl;
       if (is_reached(cptr, gx, gy)) {
         best = cptr->g;
         bestID = cptr->id;
         bestPtr = cptr;
         break;
       }
-      vid cid = id(cptr->v.x, cptr->v.y);
+      VID cid = id(cptr->v.x, cptr->v.y);
       assert(cptr->si.key < gtable[cid].size());
       if (gval(cid, cptr->si.key) < cptr->g)
         continue;
       const static int nummoves = 4;
-      const static vid dx[] = {0, 0, 1, -1, 0};
-      const static vid dy[] = {1, -1, 0, 0, 0};
+      const static VID dx[] = {0, 0, 1, -1, 0};
+      const static VID dy[] = {1, -1, 0, 0, 0};
       const static Cost w[] = {1, 1, 1, 1, 1};
       for (int i = 0; i < nummoves; i++) {
-        vid nx = cptr->v.x + dx[i];
-        vid ny = cptr->v.y + dy[i];
+        Coord nx = cptr->v.x + dx[i];
+        Coord ny = cptr->v.y + dy[i];
         if (graph.is_obstacle({nx, ny})) {
           continue;
         }
         // current can reach the suc in interval [tl, tr)
-        Time tl = cptr->v.t + w[i], tr = cptr->si.tr + w[i];
-        auto save_intvs = find_safe_intvs(nx, ny, tl, tr);
+        Time tl = cptr->v.t, tr = cptr->si.tr;
+        auto nid = id(nx, ny);
+        auto save_intvs = find_safe_intvs(cid, nid, tl, tr, w[i]);
         // iterate all safe intervals that overlapped with [tl, tr)
+				tl += w[i], tr += w[i];
         for (auto &safe_intv : save_intvs)
           if (safe_intv.is_overlapped(tl, tr)) {
             Time nt = max(safe_intv.tl, tl);
-            vid nid = id(nx, ny);
+            VID nid = id(nx, ny);
             // already explored
             if (gval(nid, safe_intv.key) <= nt)
               continue;
@@ -283,7 +310,7 @@ public:
             nptr->h = hVal(nptr->v, gx, gy);
             nptr->pa = cptr->id;
             nptr->pa_ptr = cptr;
-            // cout << "\t Push:" << *nptr.get() << endl;
+            if (SIPPDBG) cout << "\t Push:" << *nptr.get() << endl;
             q.push(nptr);
           }
       }
@@ -305,10 +332,10 @@ public:
 
   inline bool validate(const vector<STState> &path) {
     for (const auto &v : path) {
-      vid key = id(v.x, v.y);
-      if (cstrs.find(key) == cstrs.end())
+      VID key = id(v.x, v.y);
+      if (cstrs_n.find(key) == cstrs_n.end())
         continue;
-      for (const auto &l : cstrs.at(key)) {
+      for (const auto &l : cstrs_n.at(key)) {
         if (l.tl <= v.t && v.t < l.tr) {
           cerr << std::format("Violate constraint at loc ({}, {}), time {}",
                               v.x, v.y, v.t)

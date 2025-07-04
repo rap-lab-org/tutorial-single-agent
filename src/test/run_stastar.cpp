@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 using namespace std;
 
@@ -20,8 +21,9 @@ void save_path(const vector<STAstar::STState> &path, string fn) {
 
 void run(movingai::gridmap &g, dynenv::DynScen &scen) {
 
+	SIPP::EdgeCSTRs ecstrs = {};
   STAstar solver(g, scen.node_constraints, g.width_, g.height_);
-  SIPP sipp(g, scen.node_constraints, g.width_, g.height_);
+  SIPP sipp(g, scen.node_constraints, ecstrs, g.width_, g.height_);
   // STAstarRC solverRC(g, scen.node_constraints, g.width_, g.height_);
   auto sy = scen.source / g.width_;
   auto sx = scen.source % g.width_;
